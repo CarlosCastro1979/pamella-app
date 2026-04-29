@@ -2,21 +2,21 @@
   "name": "PAMELLA Personal App",
   "short_name": "PAMELLA",
   "description": "Gestão de aulas e cobranças para personal trainer",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/pamella-app/",
+  "scope": "/pamella-app/",
   "display": "standalone",
   "background_color": "#f5f3ff",
   "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/pamella-app/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/pamella-app/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
