@@ -83,6 +83,14 @@ select.input option{color:var(--text);background:#fff;font-weight:500}
 .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .badge-green{background:var(--green-bg);color:var(--green)}
 .badge-amber{background:var(--amber-bg);color:var(--amber)}
+.aula-musculacao{border-left:4px solid #e74c3c!important;background:linear-gradient(90deg,#fdf0ef 0%,var(--card) 50%)!important}
+.aula-natacao{border-left:4px solid #2980b9!important;background:linear-gradient(90deg,#eaf4fb 0%,var(--card) 50%)!important}
+.aula-outro{border-left:4px solid #8e44ad!important;background:linear-gradient(90deg,#f5eef8 0%,var(--card) 50%)!important}
+.tipo-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-left:4px}
+.tipo-musc{background:#fde8e8;color:#c0392b}
+.tipo-nat{background:#d6eaf8;color:#1a6fa0}
+.tipo-out{background:#e8daef;color:#6c3483}
+.mensalidade-badge{background:#e8f8f0;color:#1e8449;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
 
 .client-item{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.18s;box-shadow:var(--shadow)}
 .client-item:active{background:var(--bg3)}
@@ -307,9 +315,11 @@ function renderDaySessions(date){
   if(!sessions.length){h+=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;font-weight:500;background:var(--card);border:1.5px solid var(--border);border-radius:12px">Sem aulas neste dia</div>`}
   else sessions.forEach(s=>{
     const c=db.clients.find(x=>x.id===s.clientId),nm=c?c.name:'—';
-    const te=s.timeEnd?`–${s.timeEnd}`:'';h+=`<div class="session-item ${s.done?'done-item':''}">
+    const te=s.timeEnd?`–${s.timeEnd}`:'';const tipoClass=s.tipoAula==='musculacao'?'aula-musculacao':s.tipoAula==='natacao'?'aula-natacao':s.tipoAula==='outro'?'aula-outro':'';
+    const tipoBadge=s.tipoAula==='musculacao'?'<span class="tipo-badge tipo-musc">💪</span>':s.tipoAula==='natacao'?'<span class="tipo-badge tipo-nat">🏊</span>':s.tipoAula==='outro'?`<span class="tipo-badge tipo-out">📋 ${s.tipoAulaCustom||'Outro'}</span>`:'';
+    h+=`<div class="session-item ${s.done?'done-item':''} ${tipoClass}">
       <div class="session-time">${s.time}${te}</div>
-      <div class="session-client"><h4>${nm}</h4><p>R$ ${(c?.price||0).toFixed(2).replace('.',',')} / aula${s.recurring?' · Recorrente':''}</p></div>
+      <div class="session-client"><h4>${nm}${tipoBadge}</h4><p>${c?.billingType==='mensalidade'?`Mensalidade R$${(c?.price||0).toFixed(0)} (${c?.freq||'1x'}/sem)`:`R$ ${(c?.price||0).toFixed(2).replace('.',',')} / aula`}${s.recurring?' · Recorrente':''}</p></div>
       <div class="session-actions">
         ${!s.done?`<button class="btn btn-success btn-sm" onclick="markDone('${s.id}')">✓</button>`:`<span class="badge badge-green">✓ OK</span>`}
         <button class="btn btn-ghost btn-sm" onclick="editSession('${s.id}')">✎</button>
@@ -325,6 +335,8 @@ function deleteSession(id){if(!confirm('Eliminar esta aula?'))return;db.sessions
 function openNewSession(date,clientId){
   const d=date||selectedDate;
   const co=db.clients.map(c=>`<option value="${c.id}" ${clientId===c.id?'selected':''}>${c.name}</option>`).join('');
+  const preClient=db.clients.find(c=>c.id===clientId);
+  const defaultTipo=preClient?.tipoAulaDef||'';
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">📅 Nova Aula</div>
     <div class="input-group"><label class="input-label">Aluno</label>
@@ -355,6 +367,11 @@ function openNewSession(date,clientId){
 function toggleRecurrence(){document.getElementById('recurrenceBlock').style.display=document.getElementById('nsType').value==='recurring'?'block':'none'}
 function toggleDay(el){el.classList.toggle('selected')}
 
+function toggleTipoAulaCustom(){
+  const v=document.getElementById('nsTipoAula')?.value;
+  const box=document.getElementById('tipoAulaCustomBox');
+  if(box) box.style.display=v==='outro'?'block':'none';
+}
 function autoEndTime(){
   const s=document.getElementById('nsTime')?.value;if(!s)return;
   const [h,m]=s.split(':').map(Number);
@@ -368,7 +385,9 @@ function saveSession(){
     const cf=db.sessions.find(s=>s.date===date&&s.time===time&&s.clientId!==cid);
     if(cf){const o=db.clients.find(c=>c.id===cf.clientId);if(!confirm(`⚠️ Já existe aula às ${time} com ${o?.name||'outro aluno'}.
 Agendar mesmo assim?`))return}
-    db.sessions.push({id:genId(),clientId:cid,date,time,timeEnd,done:false,recurring:false});
+    const tipoAula=document.getElementById('nsTipoAula')?.value||'';
+    const tipoAulaCustom=tipoAula==='outro'?(document.getElementById('nsTipoAulaCustom')?.value||''):'';
+    db.sessions.push({id:genId(),clientId:cid,date,time,timeEnd,tipoAula,tipoAulaCustom,done:false,recurring:false});
     showToast('✅ Aula agendada!');
   }else{
     const days=[...document.querySelectorAll('.day-pill.selected')].map(el=>+el.dataset.day);
@@ -384,7 +403,9 @@ Agendar mesmo assim?`))return}
         if(cf&&!window._cfOk){const o=db.clients.find(c=>c.id===cf.clientId);if(!confirm(`⚠️ Conflito em ${ds} às ${time} com ${o?.name}.
 Agendar em todos os conflitos?`)){closeModal();return}window._cfOk=true}
         if(!db.sessions.find(s=>s.date===ds&&s.time===time&&s.clientId===cid))
-          db.sessions.push({id:genId(),clientId:cid,date:ds,time,timeEnd,done:false,recurring:true});
+          const tipoAulaR=document.getElementById('nsTipoAula')?.value||'';
+          const tipoAulaCustomR=tipoAulaR==='outro'?(document.getElementById('nsTipoAulaCustom')?.value||''):'';
+          db.sessions.push({id:genId(),clientId:cid,date:ds,time,timeEnd,tipoAula:tipoAulaR,tipoAulaCustom:tipoAulaCustomR,done:false,recurring:true});
       }
       cur.setDate(cur.getDate()+1);cnt++;
     }
@@ -458,16 +479,24 @@ function openNewClient(){
   showModal();setTimeout(()=>document.getElementById('ncName')?.focus(),300);
 }
 function saveClient(){
-  const name=document.getElementById('ncName').value.trim(),price=parseFloat(document.getElementById('ncPrice').value)||0;
+  const name=document.getElementById('ncName').value.trim();
+  const billingType=document.getElementById('ncBillingType').value;
+  const price=parseFloat(document.getElementById('ncPrice').value)||0;
+  const freq=document.getElementById('ncFreq')?.value||'';
+  const tipoAulaDef=document.getElementById('ncTipoAula')?.value||'';
   if(!name){showToast('⚠️ Insere o nome do aluno');return}
-  db.clients.push({id:genId(),name,price,createdAt:new Date().toISOString()});
+  if(billingType==='mensalidade'&&!price){showToast('⚠️ Define o valor da mensalidade');return}
+  if(billingType==='aula'&&!price){showToast('⚠️ Define o valor por aula');return}
+  db.clients.push({id:genId(),name,price,billingType,freq,tipoAulaDef,createdAt:new Date().toISOString()});
   save();closeModal();renderClients();showToast(`✅ ${name} adicionado!`);
 }
 function openClientDetail(id){
   const c=db.clients.find(x=>x.id===id);if(!c)return;
   const idx=db.clients.indexOf(c),ym=db.currentMonth;
   const sessions=db.sessions.filter(s=>s.clientId===id&&s.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
-  const done=sessions.filter(s=>s.done),total=done.length*(c.price||0);
+  const done=sessions.filter(s=>s.done);
+  const isMens=c.billingType==='mensalidade';
+  const total=isMens?(c.price||0):done.length*(c.price||0);
   const rows=sessions.map(s=>{
     const fd=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -480,7 +509,11 @@ function openClientDetail(id){
   document.getElementById('modalInner').innerHTML=`
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
       <div class="client-avatar ${AV[idx%8]}" style="width:54px;height:54px;font-size:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">${gi(c.name)}</div>
-      <div><div class="modal-title" style="margin:0">${c.name}</div><div style="font-size:13px;color:var(--text3);font-weight:600">R$ ${(c.price||0).toFixed(2).replace('.',',')} por aula</div></div>
+      <div><div class="modal-title" style="margin:0">${c.name}</div><div style="font-size:13px;color:var(--text3);font-weight:600">
+        ${c.billingType==='mensalidade'
+          ?`<span class="mensalidade-badge">Mensalidade R$${(c.price||0).toFixed(0)} (${c.freq||'1x'}/sem)</span>`
+          :`R$ ${(c.price||0).toFixed(2).replace('.',',')} por aula`}
+      </div></div>
     </div>
     <div class="stats-row" style="margin-bottom:14px">
       <div class="stat-card"><div class="stat-value">${sessions.length}</div><div class="stat-label">Agendadas</div></div>
@@ -497,19 +530,51 @@ function openClientDetail(id){
 }
 function editClient(id){
   const c=db.clients.find(x=>x.id===id);if(!c)return;
+  const bt=c.billingType||'aula';
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">✎ Editar Aluno</div>
     <div class="input-group"><label class="input-label">Nome</label><input type="text" class="input" id="ecName" value="${c.name}"></div>
-    <div class="input-group"><label class="input-label">Valor por aula (R$)</label><input type="number" class="input" id="ecPrice" value="${c.price||0}" step="0.01" min="0"></div>
+    <div class="input-group"><label class="input-label">Tipo de aula padrão</label>
+      <select class="input" id="ecTipoAula">
+        <option value="" ${!c.tipoAulaDef?'selected':''}>— Sem padrão —</option>
+        <option value="musculacao" ${c.tipoAulaDef==='musculacao'?'selected':''}>💪 Musculação</option>
+        <option value="natacao" ${c.tipoAulaDef==='natacao'?'selected':''}>🏊 Natação</option>
+        <option value="outro" ${c.tipoAulaDef==='outro'?'selected':''}>📋 Outro</option>
+      </select>
+    </div>
+    <div class="input-group"><label class="input-label">Faturação</label>
+      <select class="input" id="ecBillingType" onchange="toggleEditBilling('${id}')">
+        <option value="aula" ${bt==='aula'?'selected':''}>Por aula</option>
+        <option value="mensalidade" ${bt==='mensalidade'?'selected':''}>Mensalidade</option>
+      </select>
+    </div>
+    <div id="ecFreqGroup" style="display:${bt==='mensalidade'?'block':'none'}">
+      <div class="input-group"><label class="input-label">Frequência</label>
+        <select class="input" id="ecFreq">
+          <option value="1x" ${c.freq==='1x'?'selected':''}>1x por semana</option>
+          <option value="2x" ${c.freq==='2x'?'selected':''}>2x por semana</option>
+        </select>
+      </div>
+    </div>
+    <div class="input-group" id="ecPriceLabel"><label class="input-label">${bt==='mensalidade'?'Valor mensal (R$)':'Valor por aula (R$)'}</label><input type="number" class="input" id="ecPrice" value="${c.price||0}" step="0.01" min="0"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn btn-ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
       <button class="btn btn-warning" onclick="saveEditClient('${id}')" style="flex:1">Guardar</button>
     </div>`;
   showModal();
 }
+function toggleEditBilling(id){
+  const bt=document.getElementById('ecBillingType').value;
+  document.getElementById('ecFreqGroup').style.display=bt==='mensalidade'?'block':'none';
+  document.getElementById('ecPriceLabel').querySelector('label').textContent=bt==='mensalidade'?'Valor mensal (R$)':'Valor por aula (R$)';
+}
 function saveEditClient(id){
   const c=db.clients.find(x=>x.id===id);if(!c)return;
-  c.name=document.getElementById('ecName').value.trim()||c.name;c.price=parseFloat(document.getElementById('ecPrice').value)||0;
+  c.name=document.getElementById('ecName').value.trim()||c.name;
+  c.price=parseFloat(document.getElementById('ecPrice').value)||0;
+  c.billingType=document.getElementById('ecBillingType').value;
+  c.freq=document.getElementById('ecFreq')?.value||'';
+  c.tipoAulaDef=document.getElementById('ecTipoAula')?.value||'';
   save();closeModal();renderClients();showToast('✅ Aluno atualizado!');
 }
 function deleteClient(id){
@@ -523,7 +588,7 @@ function setSummaryView(v){summaryView=v;document.getElementById('btnViewTeacher
 function renderSummary(){
   const ym=db.currentMonth,mn=new Date(ym+'-01T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   let tr=0,td=0,ts=0;
-  db.clients.forEach(c=>{const s=db.sessions.filter(x=>x.clientId===c.id&&x.date.startsWith(ym)),d=s.filter(x=>x.done);td+=d.length;ts+=s.length;tr+=d.length*(c.price||0)});
+  db.clients.forEach(c=>{const s=db.sessions.filter(x=>x.clientId===c.id&&x.date.startsWith(ym)),d=s.filter(x=>x.done);td+=d.length;ts+=s.length;const isMens=c.billingType==='mensalidade';tr+=isMens?(d.length>0?(c.price||0):0):d.length*(c.price||0)});
   document.getElementById('summaryStats').innerHTML=`
     <div class="stat-card"><div class="stat-value">${ts}</div><div class="stat-label">Agendadas</div></div>
     <div class="stat-card"><div class="stat-value" style="color:var(--green)">${td}</div><div class="stat-label">Realizadas</div></div>
