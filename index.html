@@ -319,7 +319,7 @@ function renderDaySessions(date){
     const tb=s.tipoAula==='musculacao'?'<span class="tipo-badge tipo-musc">💪</span>':s.tipoAula==='natacao'?'<span class="tipo-badge tipo-nat">🏊</span>':s.tipoAula==='outro'?`<span class="tipo-badge tipo-out">📋 ${s.tipoAulaCustom||'Outro'}</span>`:'';
     h+=`<div class="session-item ${s.done?'done-item':''} ${tc}">
       <div class="session-time">${s.time}${te}</div>
-      <div class="session-client"><h4>${nm}${tb}</h4><p>${c?.billingType==='mensalidade'?`Mensalidade R$${(c?.price||0).toFixed(0)} (${c?.freq||'1x'}/sem)`:`R$ ${(c?.price||0).toFixed(2).replace('.',',')} / aula`}${s.recurring?' · Recorrente':''}</p></div>
+      <div class="session-client"><h4>${nm}${tb}</h4><p>${s.tipoAula?`${s.tipoAula==='musculacao'?'💪 Musculação':s.tipoAula==='natacao'?'🏊 Natação':s.tipoAula==='outro'?`📋 ${s.tipoAulaCustom||'Outro'}`:''}  ·  `:''}${c?.billingType==='mensalidade'?`Mensalidade R$${(c?.price||0).toFixed(0)} (${c?.freq||'1x'}/sem)`:`R$ ${(c?.price||0).toFixed(2).replace('.',',')} / aula`}${s.recurring?' · Recorrente':''}</p></div>
       <div class="session-actions">
         ${!s.done?`<button class="btn btn-success btn-sm" onclick="markDone('${s.id}')">✓</button>`:`<span class="badge badge-green">✓ OK</span>`}
         <button class="btn btn-ghost btn-sm" onclick="editSession('${s.id}')">✎</button>
