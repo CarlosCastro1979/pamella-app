@@ -636,30 +636,32 @@ function renderStudentDetail(){
   const c=db.clients.find(x=>x.id===cid);
   if(!c){area.innerHTML='';return;}
   const ym=db.currentMonth;
+  const isMens=c.billingType==='mensalidade';
   const done=db.sessions.filter(s=>s.clientId===cid&&s.done&&s.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date));
-  const total=done.length*(c.price||0);
+  const total=isMens?(done.length>0?(c.price||0):0):done.length*(c.price||0);
   const mn=new Date(ym+'-01T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const cap=mn.charAt(0).toUpperCase()+mn.slice(1);
   if(!done.length){area.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;font-weight:500">Sem aulas realizadas este mês</div>`;return;}
   const rows=done.map(s=>{
     const fd=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
     const horario=s.timeEnd?`${s.time}–${s.timeEnd}`:s.time;
-    return `<div class="summary-row"><span>${fd} · ${horario}</span><span style="font-weight:700">R$ ${(c.price||0).toFixed(2).replace('.',',')}</span></div>`;
+    return `<div class="summary-row"><span>${fd} · ${horario}</span><span style="font-weight:700;color:var(--text3)">${isMens?'✓':('R$ '+(c.price||0).toFixed(2).replace('.',','))}</span></div>`;
   }).join('');
-  // Build WhatsApp message
   const waLines=done.map(s=>{
     const fd=new Date(s.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
     const horario=s.timeEnd?`${s.time}–${s.timeEnd}`:s.time;
-    return `• ${fd} ${horario} — R$ ${(c.price||0).toFixed(2).replace('.',',')}`;
+    return `• ${fd} ${horario}`;
   }).join('\n');
-  const waMsg=encodeURIComponent(`*PAMELLA Personal App*\n*${cap}*\n\nOlá ${c.name}! 😊\n\nResumo das tuas aulas:\n\n${waLines}\n\n*Total: R$ ${total.toFixed(2).replace('.',',')}*\n\nObrigada! 💪`);
+  const billingLine=isMens?`Mensalidade mensal: R$ ${total.toFixed(2).replace('.',',')}`:`${done.length} aula(s) × R$ ${(c.price||0).toFixed(2).replace('.',',')} = R$ ${total.toFixed(2).replace('.',',')}`;
+  const waMsg=encodeURIComponent(`*PAMELLA Personal App*\n*${cap}*\n\nOlá ${c.name}! 😊\n\nResumo das tuas aulas:\n\n${waLines}\n\n${billingLine}\n\n*Total: R$ ${total.toFixed(2).replace('.',',')}*\n\nObrigada! 💪`);
+  const subtitleLine=isMens?`Mensalidade R$ ${(c.price||0).toFixed(2).replace('.',',')} · ${done.length} aula(s) realizada(s)`:`${done.length} aula(s) × R$ ${(c.price||0).toFixed(2).replace('.',',')}`;
   area.innerHTML=`
     <div class="card" style="margin-top:0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div><div style="font-size:16px;font-weight:800;color:var(--text)">${c.name}</div><div style="font-size:12px;color:var(--text3);font-weight:500">${cap}</div></div>
         <div class="summary-total">R$ ${total.toFixed(2).replace('.',',')}</div>
       </div>
-      <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:8px">${done.length} aula(s) × R$ ${(c.price||0).toFixed(2).replace('.',',')}</div>
+      <div style="font-size:12px;color:var(--text3);font-weight:600;margin-bottom:8px">${subtitleLine}</div>
       <div style="border-top:1.5px solid var(--border);padding-top:10px">${rows}</div>
       <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:15px;font-weight:800;color:var(--green)"><span>Total a pagar</span><span>R$ ${total.toFixed(2).replace('.',',')}</span></div>
     </div>
