@@ -480,12 +480,36 @@ function openNewClient(){
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">👤 Novo Aluno</div>
     <div class="input-group"><label class="input-label">Nome do aluno</label><input type="text" class="input" id="ncName" placeholder="Ex: Carlos Castro"></div>
-    <div class="input-group"><label class="input-label">Valor por aula (R$)</label><input type="number" class="input" id="ncPrice" placeholder="Ex: 150" step="0.01" min="0"></div>
+    <div class="input-group"><label class="input-label">Tipo de aula padrão</label>
+      <select class="input" id="ncTipoAula">
+        <option value="">— Sem padrão —</option>
+        <option value="musculacao">💪 Musculação</option>
+        <option value="natacao">🏊 Natação</option>
+        <option value="outro">📋 Outro</option>
+      </select></div>
+    <div class="input-group"><label class="input-label">Tipo de faturação</label>
+      <select class="input" id="ncBillingType" onchange="toggleNewBilling()">
+        <option value="aula">Por aula</option>
+        <option value="mensalidade">Mensalidade</option>
+      </select></div>
+    <div id="ncFreqGroup" style="display:none">
+      <div class="input-group"><label class="input-label">Frequência</label>
+        <select class="input" id="ncFreq">
+          <option value="1x">1x por semana</option>
+          <option value="2x">2x por semana</option>
+        </select></div></div>
+    <div class="input-group"><label class="input-label" id="ncPriceLabel">Valor por aula (R$)</label>
+      <input type="number" class="input" id="ncPrice" placeholder="Ex: 150" step="0.01" min="0"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn btn-ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
       <button class="btn btn-primary" onclick="saveClient()" style="flex:1">Criar Aluno</button>
     </div>`;
   showModal();setTimeout(()=>document.getElementById('ncName')?.focus(),300);
+}
+function toggleNewBilling(){
+  const bt=document.getElementById('ncBillingType').value;
+  document.getElementById('ncFreqGroup').style.display=bt==='mensalidade'?'block':'none';
+  document.getElementById('ncPriceLabel').textContent=bt==='mensalidade'?'Valor mensal (R$)':'Valor por aula (R$)';
 }
 function saveClient(){
   const name=document.getElementById('ncName').value.trim();
