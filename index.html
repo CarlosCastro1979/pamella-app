@@ -467,11 +467,13 @@ function renderClients(){
   const ym=db.currentMonth;
   cont.innerHTML=db.clients.map((c,i)=>{
     const done=db.sessions.filter(s=>s.clientId===c.id&&s.done&&s.date.startsWith(ym));
-    const total=done.length*(c.price||0);
     const tot=db.sessions.filter(s=>s.clientId===c.id&&s.date.startsWith(ym)).length;
+    const isMens=c.billingType==='mensalidade';
+    const total=isMens?(done.length>0?(c.price||0):0):done.length*(c.price||0);
+    const priceLabel=isMens?`Mensalidade R$${(c.price||0).toFixed(0)} (${c.freq||'1x'}/sem)`:`R$ ${(c.price||0).toFixed(2).replace('.',',')} / aula`;
     return `<div class="client-item" onclick="openClientDetail('${c.id}')">
       <div class="client-avatar ${AV[i%8]}">${gi(c.name)}</div>
-      <div class="client-info"><h3>${c.name}</h3><p>R$ ${(c.price||0).toFixed(2).replace('.',',')} / aula · ${tot} aulas</p></div>
+      <div class="client-info"><h3>${c.name}</h3><p>${priceLabel} · ${tot} aulas</p></div>
       <div class="client-value"><div class="amount">R$ ${total.toFixed(2).replace('.',',')}</div><div class="classes">${done.length} realizadas</div></div>
     </div>`;
   }).join('');
