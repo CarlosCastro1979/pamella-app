@@ -609,7 +609,7 @@ function renderSummary(){
   const cont=document.getElementById('summaryContent');
   if(summaryView==='teacher'){
     let h='';
-    db.clients.forEach((c,i)=>{const d=db.sessions.filter(s=>s.clientId===c.id&&s.done&&s.date.startsWith(ym)),t=d.length*(c.price||0);
+    db.clients.forEach((c,i)=>{const d=db.sessions.filter(s=>s.clientId===c.id&&s.done&&s.date.startsWith(ym)),t=c.billingType==='mensalidade'?(d.length>0?(c.price||0):0):d.length*(c.price||0);
       h+=`<div class="client-item" style="cursor:default"><div class="client-avatar ${AV[i%8]}">${gi(c.name)}</div><div class="client-info"><h3>${c.name}</h3><p>${d.length} aula(s) realizada(s)</p></div><div class="client-value"><div class="amount">R$ ${t.toFixed(2).replace('.',',')}</div></div></div>`;
     });
     if(!h)h=`<div class="empty-state"><span class="ei">📊</span><p>Sem aulas realizadas<br>neste mês</p></div>`;
