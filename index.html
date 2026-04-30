@@ -335,12 +335,10 @@ function deleteSession(id){if(!confirm('Eliminar esta aula?'))return;db.sessions
 function openNewSession(date,clientId){
   const d=date||selectedDate;
   const co=db.clients.map(c=>`<option value="${c.id}" ${clientId===c.id?'selected':''}>${c.name}</option>`).join('');
-  const preClient=db.clients.find(c=>c.id===clientId);
-  const defTipo=preClient?.tipoAulaDef||'';
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">📅 Nova Aula</div>
     <div class="input-group"><label class="input-label">Aluno</label>
-    <select class="input" id="nsClient" onchange="updateDefaultTipo(this)">${co||'<option value="">— Cria um aluno primeiro —</option>'}</select></div>
+    <select class="input" id="nsClient">${co||'<option value="">— Cria um aluno primeiro —</option>'}</select></div>
     <div class="input-group"><label class="input-label">Data</label><input type="date" class="input" id="nsDate" value="${d}"></div>
     <div class="time-row">
       <div class="input-group"><label class="input-label">Hora início</label><input type="time" class="input" id="nsTime" value="07:00" onchange="autoEndTime()"></div>
@@ -356,6 +354,16 @@ function openNewSession(date,clientId){
       <div class="recurrence-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i)=>`<div class="day-pill" data-day="${i}" onclick="toggleDay(this)">${d}</div>`).join('')}</div></div>
       <div class="input-group"><label class="input-label">Até à data</label><input type="date" class="input" id="nsUntil"></div>
     </div>
+    <div class="input-group"><label class="input-label">Tipo de aula</label>
+      <select class="input" id="nsTipoAula" onchange="toggleTipoCustom()">
+        <option value="">— Selecionar —</option>
+        <option value="musculacao">💪 Musculação</option>
+        <option value="natacao">🏊 Natação</option>
+        <option value="outro">📋 Outro</option>
+      </select></div>
+    <div id="tipoCustomBox" style="display:none" class="input-group">
+      <label class="input-label">Qual tipo de aula?</label>
+      <input type="text" class="input" id="nsTipoCustom" placeholder="Ex: Esgrima, Pilates, Funcional..."></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn btn-ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
       <button class="btn btn-primary" onclick="saveSession()" style="flex:1">Guardar</button>
@@ -371,14 +379,6 @@ function toggleTipoCustom(){
   const v=document.getElementById('nsTipoAula')?.value;
   const box=document.getElementById('tipoCustomBox');
   if(box) box.style.display=v==='outro'?'block':'none';
-}
-function updateDefaultTipo(sel){
-  const cid=sel.value;
-  const c=db.clients.find(x=>x.id===cid);
-  const def=c?.tipoAulaDef||'';
-  const tipoSel=document.getElementById('nsTipoAula');
-  if(tipoSel&&def) tipoSel.value=def;
-  toggleTipoCustom();
 }
 function autoEndTime(){
   const s=document.getElementById('nsTime')?.value;if(!s)return;
@@ -480,13 +480,6 @@ function openNewClient(){
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">👤 Novo Aluno</div>
     <div class="input-group"><label class="input-label">Nome do aluno</label><input type="text" class="input" id="ncName" placeholder="Ex: Carlos Castro"></div>
-    <div class="input-group"><label class="input-label">Tipo de aula padrão</label>
-      <select class="input" id="ncTipoAula">
-        <option value="">— Sem padrão —</option>
-        <option value="musculacao">💪 Musculação</option>
-        <option value="natacao">🏊 Natação</option>
-        <option value="outro">📋 Outro</option>
-      </select></div>
     <div class="input-group"><label class="input-label">Tipo de faturação</label>
       <select class="input" id="ncBillingType" onchange="toggleNewBilling()">
         <option value="aula">Por aula</option>
@@ -562,13 +555,6 @@ function editClient(id){
   document.getElementById('modalInner').innerHTML=`
     <div class="modal-title">✎ Editar Aluno</div>
     <div class="input-group"><label class="input-label">Nome</label><input type="text" class="input" id="ecName" value="${c.name}"></div>
-    <div class="input-group"><label class="input-label">Tipo de aula padrão</label>
-      <select class="input" id="ecTipoAula">
-        <option value="" ${!c.tipoAulaDef?'selected':''}>— Sem padrão —</option>
-        <option value="musculacao" ${c.tipoAulaDef==='musculacao'?'selected':''}>💪 Musculação</option>
-        <option value="natacao" ${c.tipoAulaDef==='natacao'?'selected':''}>🏊 Natação</option>
-        <option value="outro" ${c.tipoAulaDef==='outro'?'selected':''}>📋 Outro</option>
-      </select></div>
     <div class="input-group"><label class="input-label">Faturação</label>
       <select class="input" id="ecBillingType" onchange="toggleEditBilling()">
         <option value="aula" ${bt==='aula'?'selected':''}>Por aula</option>
